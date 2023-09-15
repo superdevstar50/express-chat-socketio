@@ -19,11 +19,11 @@ app.use(express.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors());
 
 app.post("/create-link", (req, res) => {
-  const { minute } = req.body;
+  const { minute, name, number } = req.body;
 
   let roomId = uuidv4();
 
-  const timerId = killAfterXMinutes(roomId);
+  const timerId = killAfterXMinutes(minute, roomId);
 
   data.rooms.push({
     id: roomId,
@@ -31,6 +31,8 @@ app.post("/create-link", (req, res) => {
     history: [],
     timerId,
     minute,
+    name,
+    number,
     lastdate: new Date(),
   });
 
@@ -42,6 +44,19 @@ app.get("/links", (req, res) => {
     id: room.id,
     users: room.users.length,
     time: room.minute * 60 - parseInt((new Date() - room.lastdate) / 1000),
+    name: room.name,
+    number: room.number,
+  }));
+
+  res.json(roomInfo);
+});
+
+app.get("/openedrooms", (req, res) => {
+  const roomInfo = data.rooms.map((room) => ({
+    id: room.id,
+    time: room.minute * 60 - parseInt((new Date() - room.lastdate) / 1000),
+    name: room.name,
+    history: room.history,
   }));
 
   res.json(roomInfo);
