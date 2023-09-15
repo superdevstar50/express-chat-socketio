@@ -86,6 +86,8 @@ io.on("connection", (socket) => {
   socket.on("msg", (msg) => {
     const room = findRoom(socket.roomId);
 
+    if (!room) return;
+
     clearTimeout(room.timerId);
     room.timerId = setTimeout(() => {
       rooms = rooms.filter((_room) => _room.id !== room.id);
