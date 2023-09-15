@@ -72,6 +72,7 @@ app.get("/closedrooms", (req, res) => {
     .map((room) => ({
       id: room.id,
       name: room.name,
+      date: room.lastdate,
       history: room.history,
     }));
 
