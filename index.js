@@ -3,6 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { Server } from "socket.io";
 import path from "path";
+import { v4 as uuidv4 } from "uuid";
+
+dotenv.config();
 
 const __dirname = path.resolve();
 
@@ -12,30 +15,48 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-import { v4 as uuidv4 } from "uuid";
-
-dotenv.config();
-
 app.use(express.json({ limit: "30mb", extended: true }));
 app.use(express.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors());
 
-const rooms = [];
+let rooms = [];
 
 app.post("/create-link", (req, res) => {
+  const { minute } = req.body;
+
   let roomId = uuidv4();
-  rooms.push({ id: roomId, users: [], history: [] });
+
+  const timerId = setTimeout(() => {
+    rooms = rooms.filter((room) => room.id !== roomId);
+  }, minute * 60 * 1000);
+
+  rooms.push({
+    id: roomId,
+    users: [],
+    history: [],
+    timerId,
+    minute,
+    lastdate: new Date(),
+  });
 
   res.json({ id: roomId });
 });
 
-app.post("/room/:roomId", (req, res) => {});
+app.get("/links", (req, res) => {
+  const roomInfo = rooms.map((room) => ({
+    id: room.id,
+    users: room.users.length,
+    time: room.minute * 60 - parseInt((new Date() - room.lastdate) / 1000),
+  }));
 
-app.use("/", express.static(path.join(__dirname, "build")));
+  res.json(roomInfo);
+});
+
+app.post("/room/:roomId", (req, res) => {});
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "*",
   },
 });
 
@@ -64,6 +85,12 @@ io.on("connection", (socket) => {
 
   socket.on("msg", (msg) => {
     const room = findRoom(socket.roomId);
+
+    clearTimeout(room.timerId);
+    room.timerId = setTimeout(() => {
+      rooms = rooms.filter((_room) => _room.id !== room.id);
+    }, room.minute * 60 * 1000);
+    room.lastdate = new Date();
 
     const message = {
       userId: socket.name,
@@ -95,8 +122,10 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     const room = findRoom(socket.roomId);
+
+    if (!room) return;
+
     room.users = room.users.filter((user) => user.id !== socket.id);
-    console.log("disconnect");
 
     const userList = room.users
       .filter((user) => user.name)
@@ -108,4 +137,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT);
+server.listen(PORT, () => {
+  console.log(`server listening on ${PORT}`);
+});
