@@ -8,12 +8,14 @@ export const killAfterXMinutes = (minute, roomId) => {
       user.emit("timeExpired");
     });
 
-    data.rooms = data.rooms.filter((room) => room.id !== roomId);
+    room.closed = true;
   }, minute * 60 * 1000);
 
   return timerId;
 };
 
 export const findRoom = (roomId) => {
-  return data.rooms.filter((room) => room.id === roomId)[0];
+  return data.rooms
+    .filter((room) => !room.closed)
+    .filter((room) => room.id === roomId)[0];
 };

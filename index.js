@@ -40,24 +40,40 @@ app.post("/create-link", (req, res) => {
 });
 
 app.get("/links", (req, res) => {
-  const roomInfo = data.rooms.map((room) => ({
-    id: room.id,
-    users: room.users.length,
-    time: room.minute * 60 - parseInt((new Date() - room.lastdate) / 1000),
-    name: room.name,
-    number: room.number,
-  }));
+  const roomInfo = data.rooms
+    .filter((room) => !room.closed)
+    .map((room) => ({
+      id: room.id,
+      users: room.users.length,
+      time: room.minute * 60 - parseInt((new Date() - room.lastdate) / 1000),
+      name: room.name,
+      number: room.number,
+    }));
 
   res.json(roomInfo);
 });
 
 app.get("/openedrooms", (req, res) => {
-  const roomInfo = data.rooms.map((room) => ({
-    id: room.id,
-    time: room.minute * 60 - parseInt((new Date() - room.lastdate) / 1000),
-    name: room.name,
-    history: room.history,
-  }));
+  const roomInfo = data.rooms
+    .filter((room) => !room.closed)
+    .map((room) => ({
+      id: room.id,
+      time: room.minute * 60 - parseInt((new Date() - room.lastdate) / 1000),
+      name: room.name,
+      history: room.history,
+    }));
+
+  res.json(roomInfo);
+});
+
+app.get("/closedrooms", (req, res) => {
+  const roomInfo = data.rooms
+    .filter((room) => room.closed)
+    .map((room) => ({
+      id: room.id,
+      name: room.name,
+      history: room.history,
+    }));
 
   res.json(roomInfo);
 });
