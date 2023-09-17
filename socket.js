@@ -2,6 +2,9 @@ import { Server } from "socket.io";
 
 import { killAfterXMinutes, findRoom } from "./util.js";
 
+const MESSAGE_TEXT = 0;
+const MESSAGE_FILE = 1;
+
 const initSocket = (socket) => {
   const roomId = socket.handshake.query.roomId;
 
@@ -36,6 +39,30 @@ const handleMsg = (socket) => (msg) => {
   const message = {
     userId: socket.name,
     msg: msg,
+    type: MESSAGE_TEXT,
+    time: new Date(),
+  };
+
+  room.history.push(message);
+
+  room.users.forEach((user) => {
+    user.emit("msg", message);
+  });
+};
+
+const handleFile = (socket) => (filename) => {
+  const room = findRoom(socket.roomId);
+
+  if (!room) return;
+
+  clearTimeout(room.timerId);
+  room.timerId = killAfterXMinutes(room.minute, room.id);
+  room.lastdate = new Date();
+
+  const message = {
+    userId: socket.name,
+    filename,
+    type: MESSAGE_FILE,
     time: new Date(),
   };
 
@@ -88,6 +115,8 @@ export default (server) => {
     initSocket(socket);
 
     socket.on("msg", handleMsg(socket));
+
+    socket.on("sendFile", handleFile(socket));
 
     socket.on("setName", handleSetName(socket));
 
