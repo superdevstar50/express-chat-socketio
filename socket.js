@@ -47,6 +47,18 @@ const handleMsg = (socket) => (msg) => {
 
   room.users.forEach((user) => {
     user.emit("msg", message);
+
+    if (socket.name !== user.name) user.emit("typing", "end");
+  });
+};
+
+const handleTyping = (socket) => (type) => {
+  const room = findRoom(socket.roomId);
+
+  if (!room) return;
+
+  room.users.forEach((user) => {
+    if (socket.name !== user.name) user.emit("typing", type);
   });
 };
 
@@ -115,6 +127,8 @@ export default (server) => {
     initSocket(socket);
 
     socket.on("msg", handleMsg(socket));
+
+    socket.on("typing", handleTyping(socket));
 
     socket.on("sendFile", handleFile(socket));
 
