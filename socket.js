@@ -88,16 +88,20 @@ const handleFile = (socket) => (filename) => {
 const handleSetName = (socket) => (name) => {
   const room = findRoom(socket.roomId);
 
-  socket.name = name;
-  socket.emit("letsChat");
+  if (room.users.findIndex((user) => user.name === name) === -1) {
+    socket.name = name;
+    socket.emit("letsChat");
 
-  const userList = room.users
-    .filter((user) => user.name)
-    .map((user) => user.name);
+    const userList = room.users
+      .filter((user) => user.name)
+      .map((user) => user.name);
 
-  room.users.forEach((user) => {
-    user.emit("setUserList", userList);
-  });
+    room.users.forEach((user) => {
+      user.emit("setUserList", userList);
+    });
+  } else {
+    socket.emit("errSameName");
+  }
 };
 
 const handleDisconnect = (socket) => () => {
