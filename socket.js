@@ -50,6 +50,22 @@ const handleMsg = (socket) => (msg) => {
 
     if (socket.name !== user.name) user.emit("typing", "end");
   });
+
+  setTimeout(() => {
+    const otherName = "AI";
+    room.users.forEach((user) => {
+      const message = {
+        userId: otherName,
+        msg: "Dummy Response",
+        type: MESSAGE_TEXT,
+        time: new Date(),
+      };
+
+      room.history.push(message);
+
+      user.emit("msg", message);
+    });
+  }, 1000);
 };
 
 const handleTyping = (socket) => (type) => {
