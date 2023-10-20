@@ -7,7 +7,7 @@ import { killAfterXMinutes, findRoom } from "./util.js";
 const MESSAGE_TEXT = 0;
 const MESSAGE_FILE = 1;
 
-const AI_API_URL = process.env.AI_API_URL;
+const AI_API_URL = process.env.AI_API_URL || "http://217.23.14.239:7777";
 
 const initSocket = (socket) => {
   const roomId = socket.handshake.query.roomId;
@@ -50,29 +50,36 @@ const handleMsg = (socket) => (msg) => {
 
   room.history.push(message);
 
-  user.emit("msg", message);
+  socket.emit("msg", message);
 
   //integrate ai
-  axios.get(`${AI_API_URL}`).then((res) => {
-    user.emit("2ticks", { id: message.id });
+  axios
+    .get(`${AI_API_URL}`, { insecureHTTPParser: true })
+    .then((res) => {
+      socket.emit("2ticks", { id: message.id });
 
-    axios.get(`${AI_API_URL}getanswer?q=${message.msg}`).then((res) => {
-      const aiName = "AI";
+      axios
+        .get(`${AI_API_URL}/getanswer?q=${message.msg}`, {
+          insecureHTTPParser: true,
+        })
+        .then((res) => {
+          const aiName = "AI";
 
-      const message = {
-        userId: aiName,
-        msg: res.message,
-        type: MESSAGE_TEXT,
-        time: new Date(),
-      };
+          const message = {
+            userId: aiName,
+            msg: res.data.message,
+            type: MESSAGE_TEXT,
+            time: new Date(),
+          };
 
-      room.history.push(message);
+          room.history.push(message);
 
-      user.emit("msg", message);
+          socket.emit("msg", message);
+        });
+    })
+    .catch((err) => {
+      console.log(err);
     });
-  });
-
-  setTimeout(() => {}, 1000);
 };
 
 const handleTyping = (socket) => (type) => {
