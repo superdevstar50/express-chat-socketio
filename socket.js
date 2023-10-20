@@ -2,12 +2,15 @@ import { Server } from "socket.io";
 import uuid4 from "uuid4";
 import axios from "axios";
 
+import dotenv from "dotenv";
+dotenv.config();
+
 import { killAfterXMinutes, findRoom } from "./util.js";
 
 const MESSAGE_TEXT = 0;
 const MESSAGE_FILE = 1;
 
-const AI_API_URL = process.env.AI_API_URL || "http://217.23.14.239:7777";
+const AI_API_URL = process.env.AI_API_URL;
 
 const initSocket = (socket) => {
   const roomId = socket.handshake.query.roomId;
