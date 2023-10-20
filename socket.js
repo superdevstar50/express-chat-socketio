@@ -57,7 +57,7 @@ const handleMsg = (socket) => (msg) => {
 
   //integrate ai
   axios
-    .get(`${AI_API_URL}`, { insecureHTTPParser: true })
+    .get(`${AI_API_URL}/ping`, { insecureHTTPParser: true })
     .then((res) => {
       socket.emit("2ticks", { id: message.id });
 
