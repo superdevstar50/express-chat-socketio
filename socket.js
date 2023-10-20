@@ -1,9 +1,13 @@
 import { Server } from "socket.io";
+import uuid4 from "uuid4";
+import axios from "axios";
 
 import { killAfterXMinutes, findRoom } from "./util.js";
 
 const MESSAGE_TEXT = 0;
 const MESSAGE_FILE = 1;
+
+const AI_API_URL = process.env.AI_API_URL;
 
 const initSocket = (socket) => {
   const roomId = socket.handshake.query.roomId;
@@ -37,6 +41,7 @@ const handleMsg = (socket) => (msg) => {
   room.lastdate = new Date();
 
   const message = {
+    id: uuid4(),
     userId: socket.name,
     msg: msg,
     type: MESSAGE_TEXT,
@@ -45,18 +50,18 @@ const handleMsg = (socket) => (msg) => {
 
   room.history.push(message);
 
-  room.users.forEach((user) => {
-    user.emit("msg", message);
+  user.emit("msg", message);
 
-    if (socket.name !== user.name) user.emit("typing", "end");
-  });
+  //integrate ai
+  axios.get(`${AI_API_URL}`).then((res) => {
+    user.emit("2ticks", { id: message.id });
 
-  setTimeout(() => {
-    const otherName = "AI";
-    room.users.forEach((user) => {
+    axios.get(`${AI_API_URL}getanswer?q=${message.msg}`).then((res) => {
+      const aiName = "AI";
+
       const message = {
-        userId: otherName,
-        msg: "Dummy Response",
+        userId: aiName,
+        msg: res.message,
         type: MESSAGE_TEXT,
         time: new Date(),
       };
@@ -65,7 +70,9 @@ const handleMsg = (socket) => (msg) => {
 
       user.emit("msg", message);
     });
-  }, 1000);
+  });
+
+  setTimeout(() => {}, 1000);
 };
 
 const handleTyping = (socket) => (type) => {

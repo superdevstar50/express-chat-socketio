@@ -1,7 +1,10 @@
 import http from "http";
 import express from "express";
 import cors from "cors";
+
 import dotenv from "dotenv";
+dotenv.config();
+
 import multer from "multer";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
@@ -11,8 +14,6 @@ import { data } from "./store.js";
 import { killAfterXMinutes } from "./util.js";
 
 const __dirname = path.resolve();
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
