@@ -1,6 +1,8 @@
 import { Server } from "socket.io";
 import uuid4 from "uuid4";
 import axios from "axios";
+import fs from "fs";
+import FormData from "form-data";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -104,17 +106,61 @@ const handleFile = (socket) => (filename) => {
   room.timerId = killAfterXMinutes(room.minute, room.id);
   room.lastdate = new Date();
 
-  const message = {
-    userId: socket.name,
-    filename,
-    type: MESSAGE_FILE,
-    time: new Date(),
+  var newFile = fs.createReadStream(`./uploads/${filename}`);
+
+  const form_data = new FormData();
+  form_data.append("file", newFile);
+  const request_config = {
+    method: "post",
+    url: `${AI_API_URL}/gettext`,
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    data: form_data,
+    insecureHTTPParser: true,
   };
+  axios(request_config).then((res) => {
+    const msgText = res.data.message;
 
-  room.history.push(message);
+    const message = {
+      id: uuid4(),
+      userId: socket.name,
+      filename,
+      type: MESSAGE_FILE,
+      time: new Date(),
+    };
 
-  room.users.forEach((user) => {
-    user.emit("msg", message);
+    room.history.push(message);
+
+    socket.emit("msg", message);
+
+    axios
+      .get(`${AI_API_URL}/ping`, { insecureHTTPParser: true })
+      .then((res) => {
+        socket.emit("2ticks", { id: message.id });
+
+        axios
+          .get(`${AI_API_URL}/getanswer?q=${msgText}`, {
+            insecureHTTPParser: true,
+          })
+          .then((res) => {
+            const aiName = "AI";
+
+            const message = {
+              userId: aiName,
+              msg: res.data.message,
+              type: MESSAGE_TEXT,
+              time: new Date(),
+            };
+
+            room.history.push(message);
+
+            socket.emit("msg", message);
+          });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   });
 };
 
