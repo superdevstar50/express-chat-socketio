@@ -136,12 +136,16 @@ const handleFile = (socket) => (filename) => {
 
     room.history.push(message);
 
-    socket.emit("msg", message);
+    room.users.forEach((user) => {
+      user.emit("msg", message);
+    });
 
     axios
       .get(`${AI_API_URL}/ping`, { insecureHTTPParser: true })
       .then((res) => {
-        socket.emit("2ticks", { id: message.id });
+        room.users.forEach((user) => {
+          user.emit("2ticks", { id: message.id });
+        });
 
         axios
           .get(`${AI_API_URL}/getanswer?q=${msgText}`, {
@@ -159,7 +163,9 @@ const handleFile = (socket) => (filename) => {
 
             room.history.push(message);
 
-            socket.emit("msg", message);
+            room.users.forEach((user) => {
+              user.emit("msg", message);
+            });
           });
       })
       .catch((err) => {
