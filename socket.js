@@ -61,7 +61,9 @@ const handleMsg = (socket) => (msg) => {
   axios
     .get(`${AI_API_URL}/ping`, { insecureHTTPParser: true })
     .then((res) => {
-      socket.emit("2ticks", { id: message.id });
+      room.users.forEach((user) => {
+        user.emit("2ticks", { id: message.id });
+      });
 
       axios
         .get(`${AI_API_URL}/getanswer?q=${message.msg}`, {
@@ -79,7 +81,9 @@ const handleMsg = (socket) => (msg) => {
 
           room.history.push(message);
 
-          socket.emit("msg", message);
+          room.users.forEach((user) => {
+            user.emit("msg", message);
+          });
         });
     })
     .catch((err) => {
